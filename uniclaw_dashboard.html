@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniClaw 数据统计中心</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-cyan: #00f5ff;
+            --primary-magenta: #ff00ff;
+            --accent-purple: #8b00ff;
+            --bg-dark: #0a0a1a;
+            --bg-card: rgba(20, 20, 40, 0.8);
+            --text-light: #e0e0ff;
+            --text-muted: #8080a0;
+            --border-glow: rgba(0, 245, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* 动态背景 */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a2e 100%);
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+        }
+
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* 网格线 */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image:
+                linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+            background-size: 100px 100px;
+            animation: gridPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-magenta) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 8px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+        }
+
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary-cyan), var(--primary-magenta), transparent);
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-50%) scaleX(0.5); opacity: 0.5; }
+            50% { transform: translateX(-50%) scaleX(1); opacity: 1; }
+            100% { transform: translateX(-50%) scaleX(0.5); opacity: 0.5; }
+        }
+
+        .subtitle {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+
+        /* 统计卡片区域 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeInUp 1s ease-out backwards;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.2s; }
+        .stat-card:nth-child(2) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary-cyan);
+            box-shadow: 0 20px 60px rgba(0, 245, 255, 0.3);
+        }
+
+        .stat-card:hover::before {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.2) 0%, rgba(255, 0, 255, 0.1) 100%);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .stat-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .stat-unit {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        /* 图表区域 */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 1s ease-out backwards;
+        }
+
+        .chart-container:nth-child(1) { animation-delay: 0.6s; }
+        .chart-container:nth-child(2) { animation-delay: 0.8s; }
+        .chart-container:nth-child(3) { animation-delay: 1s; }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .chart-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: var(--primary-cyan);
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .chart-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-cyan), transparent);
+        }
+
+        .chart {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 装饰元素 */
+        .decorative-circle {
+            position: fixed;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 245, 255, 0.1);
+            pointer-events: none;
+            animation: rotate 20s linear infinite;
+        }
+
+        .circle-1 {
+            width: 600px;
+            height: 600px;
+            top: -300px;
+            right: -300px;
+        }
+
+        .circle-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            left: -200px;
+            animation-direction: reverse;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                letter-spacing: 4px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-value {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-content {
+            text-align: center;
+        }
+
+        .loader-spinner {
+            width: 80px;
+            height: 80px;
+            border: 3px solid rgba(0, 245, 255, 0.1);
+            border-top-color: var(--primary-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-cyan);
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">LOADING...</div>
+        </div>
+    </div>
+
+    <!-- 背景效果 -->
+    <div class="bg-animation"></div>
+    <div class="grid-overlay"></div>
+    <div class="decorative-circle circle-1"></div>
+    <div class="decorative-circle circle-2"></div>
+
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1 class="title">UniClaw Stats</h1>
+            <p class="subtitle">实时数据监控与分析平台</p>
+        </header>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">💎</div>
+                <div class="stat-label">总 Tokens 消耗</div>
+                <div class="stat-value" id="totalTokens">0</div>
+                <div class="stat-unit">tokens</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-label">总注册人数</div>
+                <div class="stat-value" id="totalUsers">0</div>
+                <div class="stat-unit">人</div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3 class="chart-title">📊 日活用户趋势</h3>
+                <div class="chart" id="dauChart"></div>
+            </div>
+            <div class="chart-container">
+                <h3 class="chart-title">⚡ Tokens 消耗趋势</h3>
+                <div class="chart" id="tokensChart"></div>
+            </div>
+            <div class="chart-container">
+                <h3 class="chart-title">📈 每日注册人数</h3>
+                <div class="chart" id="usersChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数据
+        const rawData = [
+            { date: '2026.06.01', tokens: 88380881, users: 86, dau: 21 },
+            { date: '2026.06.02', tokens: 58598087, users: 91, dau: 12 },
+            { date: '2026.06.03', tokens: 36792209, users: 91, dau: 14 },
+            { date: '2026.06.04', tokens: 55783364, users: 91, dau: 10 }
+        ];
+
+        // 过滤有效数据
+        const data = rawData.filter(item => item.tokens && item.users && item.dau);
+
+        // 计算总数据
+        const totalTokens = data.reduce((sum, item) => sum + item.tokens, 0);
+        const totalUsers = data[data.length - 1].users;
+
+        // 动画计数器
+        function animateValue(element, start, end, duration, suffix = '') {
+            const range = end - start;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(start + (range * easeProgress));
+
+                element.textContent = current.toLocaleString() + suffix;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // 初始化动画
+        setTimeout(() => {
+            document.getElementById('loader').classList.add('hidden');
+
+            setTimeout(() => {
+                animateValue(document.getElementById('totalTokens'), 0, totalTokens, 2000);
+                animateValue(document.getElementById('totalUsers'), 0, totalUsers, 2000);
+            }, 500);
+        }, 1500);
+
+        // ECharts 通用配置
+        const commonOption = {
+            backgroundColor: 'transparent',
+            grid: {
+                top: '15%',
+                right: '5%',
+                bottom: '15%',
+                left: '8%',
+                containLabel: true
+            },
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(20, 20, 40, 0.95)',
+                borderColor: '#00f5ff',
+                borderWidth: 1,
+                textStyle: {
+                    color: '#e0e0ff',
+                    fontFamily: 'Rajdhani'
+                }
+            }
+        };
+
+        // DAU 图表
+        const dauChart = echarts.init(document.getElementById('dauChart'));
+        dauChart.setOption({
+            ...commonOption,
+            xAxis: {
+                type: 'category',
+                data: data.map(item => item.date),
+                axisLine: { lineStyle: { color: 'rgba(0, 245, 255, 0.3)' } },
+                axisLabel: {
+                    color: '#8080a0',
+                    fontFamily: 'Rajdhani',
+                    fontSize: 12
+                },
+                splitLine: { show: false }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: { show: false },
+                axisLabel: {
+                    color: '#8080a0',
+                    fontFamily: 'Rajdhani',
+                    fontSize: 12
+                },
+                splitLine: { lineStyle: { color: 'rgba(0, 245, 255, 0.05)' } }
+            },
+            series: [{
+                data: data.map(item => item.dau),
+                type: 'line',
+                smooth: true,
+                symbol: 'circle',
+                symbolSize: 10,
+                lineStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: '#00f5ff' },
+                        { offset: 1, color: '#ff00ff' }
+                    ]),
+                    width: 3,
+                    shadowColor: 'rgba(0, 245, 255, 0.5)',
+                    shadowBlur: 10
+                },
+                itemStyle: {
+                    color: '#00f5ff',
+                    borderColor: '#0a0a1a',
+                    borderWidth: 2
+                },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(0, 245, 255, 0.4)' },
+                        { offset: 1, color: 'rgba(0, 245, 255, 0.05)' }
+                    ])
+                }
+            }]
+        });
+
+        // Tokens 图表
+        const tokensChart = echarts.init(document.getElementById('tokensChart'));
+        tokensChart.setOption({
+            ...commonOption,
+            xAxis: {
+                type: 'category',
+                data: data.map(item => item.date),
+                axisLine: { lineStyle: { color: 'rgba(255, 0, 255, 0.3)' } },
+                axisLabel: {
+                    color: '#8080a0',
+                    fontFamily: 'Rajdhani',
+                    fontSize: 12
+                },
+                splitLine: { show: false }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: { show: false },
+                axisLabel: {
+                    color: '#8080a0',
+                    fontFamily: 'Rajdhani',
+                    fontSize: 12,
+                    formatter: function(value) {
+                        return (value / 1000000).toFixed(0) + 'M';
+                    }
+                },
+                splitLine: { lineStyle: { color: 'rgba(255, 0, 255, 0.05)' } }
+            },
+            series: [{
+                data: data.map(item => item.tokens),
+                type: 'bar',
+                barWidth: '50%',
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#ff00ff' },
+                        { offset: 1, color: '#8b00ff' }
+                    ]),
+                    borderRadius: [10, 10, 0, 0],
+                    shadowColor: 'rgba(255, 0, 255, 0.5)',
+                    shadowBlur: 10
+                },
+                emphasis: {
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#ff00ff' },
+                            { offset: 1, color: '#00f5ff' }
+                        ])
+                    }
+                }
+            }]
+        });
+
+        // 注册人数图表
+        const usersChart = echarts.init(document.getElementById('usersChart'));
+        usersChart.setOption({
+            ...commonOption,
+            xAxis: {
+                type: 'category',
+                data: data.map(item => item.date),
+                axisLine: { lineStyle: { color: 'rgba(139, 0, 255, 0.3)' } },
+                axisLabel: {
+                    color: '#8080a0',
+                    fontFamily: 'Rajdhani',
+                    fontSize: 12
+                },
+                splitLine: { show: false }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: { show: false },
+                axisLabel: {
+                    color: '#8080a0',
+                    fontFamily: 'Rajdhani',
+                    fontSize: 12
+                },
+                splitLine: { lineStyle: { color: 'rgba(139, 0, 255, 0.05)' } }
+            },
+            series: [{
+                data: data.map(item => item.users),
+                type: 'line',
+                smooth: true,
+                symbol: 'diamond',
+                symbolSize: 12,
+                lineStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: '#8b00ff' },
+                        { offset: 1, color: '#00f5ff' }
+                    ]),
+                    width: 3,
+                    shadowColor: 'rgba(139, 0, 255, 0.5)',
+                    shadowBlur: 10
+                },
+                itemStyle: {
+                    color: '#8b00ff',
+                    borderColor: '#0a0a1a',
+                    borderWidth: 2
+                },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(139, 0, 255, 0.4)' },
+                        { offset: 1, color: 'rgba(139, 0, 255, 0.05)' }
+                    ])
+                }
+            }]
+        });
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            dauChart.resize();
+            tokensChart.resize();
+            usersChart.resize();
+        });
+    </script>
+</body>
+</html>
