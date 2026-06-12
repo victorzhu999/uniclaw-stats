@@ -422,7 +422,7 @@
         <!-- 头部 -->
         <header class="header">
             <h1 class="title">UniClaw Stats</h1>
-            <p class="subtitle">实时数据监控与分析平台</p>
+            <p class="subtitle">2026.06.01 - 2026.06.11 数据统计</p>
         </header>
 
         <!-- 统计卡片 -->
@@ -461,18 +461,25 @@
     <script>
         // 数据
         const rawData = [
-            { date: '2026.06.01', tokens: 88380881, users: 86, dau: 21 },
-            { date: '2026.06.02', tokens: 58598087, users: 91, dau: 12 },
-            { date: '2026.06.03', tokens: 36792209, users: 91, dau: 14 },
-            { date: '2026.06.04', tokens: 55783364, users: 91, dau: 10 }
+            { date: '2026.06.01', tokens: 88380881, users: 4, dau: 21 },
+            { date: '2026.06.02', tokens: 58598087, users: 5, dau: 12 },
+            { date: '2026.06.03', tokens: 36792209, users: 0, dau: 14 },
+            { date: '2026.06.04', tokens: 55783364, users: 0, dau: 10 },
+            { date: '2026.06.05', tokens: 57696829, users: 3, dau: 15 },
+            { date: '2026.06.06', tokens: 10006792, users: 0, dau: 4 },
+            { date: '2026.06.07', tokens: 10229232, users: 2, dau: 5 },
+            { date: '2026.06.08', tokens: 33804986, users: 9, dau: 20 },
+            { date: '2026.06.09', tokens: 143428163, users: 7, dau: 25 },
+            { date: '2026.06.10', tokens: 93749333, users: 5, dau: 23 },
+            { date: '2026.06.11', tokens: 136449733, users: 3, dau: 17 }
         ];
 
         // 过滤有效数据
-        const data = rawData.filter(item => item.tokens && item.users && item.dau);
+        const data = rawData.filter(item => item.tokens !== undefined && item.dau !== undefined);
 
         // 计算总数据
         const totalTokens = data.reduce((sum, item) => sum + item.tokens, 0);
-        const totalUsers = data[data.length - 1].users;
+        const totalUsers = data.reduce((sum, item) => sum + item.users, 0);
 
         // 动画计数器
         function animateValue(element, start, end, duration, suffix = '') {
